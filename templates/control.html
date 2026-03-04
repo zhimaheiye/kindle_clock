@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindle Clock Control</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            font-size: 1.2em;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .btn-start {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-stop {
+            background-color: #ffc107;
+            color: black;
+        }
+        .btn-reset {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kindle Clock Control</h1>
+    
+    <div class="timer-display" id="timer">00:00:00</div>
+    
+    <div class="controls">
+        <button class="btn-start" onclick="controlTimer('start')">开始</button>
+        <button class="btn-stop" onclick="controlTimer('stop')">暂停</button>
+        <button class="btn-reset" onclick="controlTimer('reset')">重置</button>
+    </div>
+
+    <script>
+        function formatTime(ms) {
+            var totalSeconds = Math.floor(ms / 1000);
+            var hours = Math.floor(totalSeconds / 3600);
+            var minutes = Math.floor((totalSeconds % 3600) / 60);
+            var seconds = totalSeconds % 60;
+
+            if (hours < 10) hours = "0" + hours;
+            if (minutes < 10) minutes = "0" + minutes;
+            if (seconds < 10) seconds = "0" + seconds;
+
+            return hours + ":" + minutes + ":" + seconds;
+        }
+
+        function updateDisplay(data) {
+            var timerDiv = document.getElementById("timer");
+            var currentElapsed = data.elapsed;
+            
+            if (data.running) {
+                var now = Date.now() / 1000;
+                currentElapsed += (now - data.start_timestamp);
+            }
+            
+            timerDiv.innerHTML = formatTime(currentElapsed * 1000);
+        }
+
+        function controlTimer(action) {
+            fetch('/api/' + action, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateDisplay(data);
+                // 如果是开始，立即触发一次轮询更新
+                if (action === 'start') {
+                    fetchStatus();
+                }
+            });
+        }
+
+        function fetchStatus() {
+            fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                updateDisplay(data);
+            });
+        }
+
+        // 每秒同步一次状态，保持显示一致
+        setInterval(fetchStatus, 1000);
+        
+        // 初始化
+        fetchStatus();
+    </script>
+</body>
+</html>
