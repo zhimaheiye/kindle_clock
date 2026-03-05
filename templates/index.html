@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,58 +13,66 @@
             padding-top: 10px;
             background-color: white;
             color: black;
-            overflow: hidden; /* 防止出现滚动条 */
-            height: 100vh;    /* 占满全屏 */
-            display: flex;    /* 使用弹性布局，方便上下排列 */
+            overflow: hidden;
+            /* 防止出现滚动条 */
+            height: 100vh;
+            /* 占满全屏 */
+            display: flex;
+            /* 使用弹性布局，方便上下排列 */
             flex-direction: column;
             align-items: center;
         }
+
         #time {
-            font-size: 5.5em; 
+            font-size: 5.5em;
             font-weight: bold;
             line-height: 1.0;
-            margin-bottom: 5px; /* 稍微减小间距 */
+            margin-bottom: 5px;
+            /* 稍微减小间距 */
         }
+
         #date {
             font-size: 1.8em;
             color: #444;
-            margin-bottom: 10px; /* 日期和计时器之间的距离 */
+            margin-bottom: 10px;
+            /* 日期和计时器之间的距离 */
         }
-        
+
         /* 【新增】计时器样式 */
         #timer {
             font-size: 2.5em;
             font-weight: bold;
             color: #000;
             margin-bottom: 10px;
-            display: none; /* 默认隐藏，有计时任务时显示 */
+            display: none;
+            /* 默认隐藏，有计时任务时显示 */
         }
 
         /* 【新增】图片的样式 */
         #hero-img {
             /* 方案 A：直接写像素（推荐） */
             /* 从 200px 改成 450px，应该能占满大半个屏幕 */
-            width: 450px; 
-            
+            width: 450px;
+
             /* 方案 B：按屏幕比例（如果怕太大溢出） */
             /* width: 70%; */
 
             height: auto;
-            
+
             /* 保持之前的滤镜和圆角 */
-            filter: grayscale(100%) contrast(120%); 
-            border-radius: 10px; 
-            
+            filter: grayscale(100%) contrast(120%);
+            border-radius: 10px;
+
             /* 【新增】如果图片太大，为了防止它贴着日期太近，加点上边距 */
             margin-top: 10px;
         }
-
     </style>
 </head>
+
 <body>
     <div id="time">--:--</div>
     <div id="date">...</div>
-    
+
     <!-- 【新增】计时器显示区域 -->
     <div id="timer">00:00:00</div>
 
@@ -94,36 +103,30 @@
             if (hours < 10) { hours = "0" + hours; }
             if (minutes < 10) { minutes = "0" + minutes; }
             var timeStr = hours + ":" + minutes;
-            
+
             var year = now.getFullYear();
             var month = now.getMonth() + 1;
             var day = now.getDate();
             var dateStr = year + "/" + month + "/" + day;
-            
+
             document.getElementById("time").innerHTML = timeStr;
             document.getElementById("date").innerHTML = dateStr;
         }
-        
+
         // 轮询后端状态
         function fetchTimerStatus() {
             var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
+            xhr.onreadystatechange = function () {
                 if (xhr.readyState == 4 && xhr.status == 200) {
                     var data = JSON.parse(xhr.responseText);
                     var timerDiv = document.getElementById("timer");
-                    
+
                     if (data.running || data.elapsed > 0) {
                         timerDiv.style.display = "block";
                         var currentElapsed = data.elapsed;
                         if (data.running) {
-                            // 如果正在运行，计算当前经过的时间
-                            // 注意：后端返回的是服务器时间戳，前端用 Date.now() / 1000 计算会有误差吗？
-                            // 为了简化，这里假设服务器和客户端时间大致同步，或者直接用差值。
-                            // 更严谨的做法是后端返回 server_time，前端计算 offset。
-                            // 但考虑到 Kindle 只是显示，且秒级误差可接受，直接用本地时间减去 start_timestamp 即可。
-                            // Python time.time() 返回的是秒（浮点数），JS Date.now() 返回的是毫秒。
-                            var now = Date.now() / 1000;
-                            currentElapsed += (now - data.start_timestamp);
+                            // 使用后端返回的 server_time 计算差值，消除前后端设备时间不一致带来的误差
+                            currentElapsed += (data.server_time - data.start_timestamp);
                         }
                         timerDiv.innerHTML = formatTime(currentElapsed * 1000);
                     } else {
@@ -138,16 +141,11 @@
         // 初始化
         updateLocalTime();
         setInterval(updateLocalTime, 1000);
-        
+
         // 每秒轮询一次状态
         setInterval(fetchTimerStatus, 1000);
 
-        // 60秒强制刷新逻辑保持不变
-        setTimeout(function() {
-            var timestamp = new Date().getTime();
-            var currentUrl = window.location.href.split('?')[0];
-            window.location.href = currentUrl + "?t=" + timestamp;
-        }, 60000);
     </script>
 </body>
+
 </html>

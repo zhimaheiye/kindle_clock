@@ -12,6 +12,11 @@ timer_state = {
     "elapsed": 0.0           # 记录之前已经累积的时间（秒）
 }
 
+def get_response_data():
+    data = timer_state.copy()
+    data["server_time"] = time.time()
+    return jsonify(data)
+
 @app.route('/')
 def index():
     """Kindle 显示端页面"""
@@ -25,7 +30,7 @@ def control():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     """获取当前计时器状态"""
-    return jsonify(timer_state)
+    return get_response_data()
 
 @app.route('/api/start', methods=['POST'])
 def start_timer():
@@ -35,7 +40,7 @@ def start_timer():
         timer_state["running"] = True
         # 记录当前时间戳，作为本次运行的起点
         timer_state["start_timestamp"] = time.time()
-    return jsonify(timer_state)
+    return get_response_data()
 
 @app.route('/api/stop', methods=['POST'])
 def stop_timer():
@@ -47,7 +52,7 @@ def stop_timer():
         current_time = time.time()
         timer_state["elapsed"] += (current_time - timer_state["start_timestamp"])
         timer_state["start_timestamp"] = 0.0
-    return jsonify(timer_state)
+    return get_response_data()
 
 @app.route('/api/reset', methods=['POST'])
 def reset_timer():
@@ -56,7 +61,7 @@ def reset_timer():
     timer_state["running"] = False
     timer_state["start_timestamp"] = 0.0
     timer_state["elapsed"] = 0.0
-    return jsonify(timer_state)
+    return get_response_data()
 
 if __name__ == '__main__':
     # 监听所有 IP，端口 5000
